@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Who Should I Cheer For? — 2026 World Cup</title>
+<style>
+  :root{
+    --bg:#0a1410; --panel:#11201a; --panel2:#16291f; --line:#234234;
+    --txt:#e8f5ee; --muted:#8fb3a1; --accent:#19c37d; --accent2:#3aa0ff;
+    --warn:#ffb020; --bad:#ff5a5a; --gold:#ffd24d;
+    --chip:#1d3a2c;
+    color-scheme:dark; /* dark native controls, so dropdown text stays readable in Safari */
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:radial-gradient(1200px 600px at 50% -200px,#13392a,#0a1410 60%);
+    color:var(--txt); font-family:"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.45;
+  }
+  h1,h2,h3{margin:0 0 .4em}
+  a{color:var(--accent2)}
+  .wrap{max-width:1180px; margin:0 auto; padding:24px 18px 80px}
+  header.hero{text-align:center; padding:18px 0 8px}
+  header.hero h1{font-size:30px; letter-spacing:.3px}
+  header.hero p{color:var(--muted); margin:0; font-size:15px}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel2)); border:1px solid var(--line);
+    border-radius:14px; padding:18px; margin:16px 0; box-shadow:0 6px 24px rgba(0,0,0,.25)}
+  .panel h2{font-size:18px; display:flex; align-items:center; gap:8px}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+  label.fld{display:block; margin:8px 0 4px; font-size:13px; color:var(--muted)}
+  select,input[type=text]{
+    width:100%; background:#0c1a14; color:var(--txt); border:1px solid var(--line);
+    border-radius:9px; padding:9px 11px; font-size:14px; outline:none; font-family:inherit;
+  }
+  option{background:#0c1a14; color:var(--txt)}
+  select:focus,input:focus{border-color:var(--accent)}
+  .fav-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px}
+  @media(max-width:780px){.fav-grid{grid-template-columns:repeat(2,1fr)}}
+  .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+  button{
+    background:var(--accent); color:#04130c; border:none; border-radius:10px;
+    padding:11px 18px; font-weight:700; font-size:15px; cursor:pointer; transition:.15s;
+  }
+  button:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent; color:var(--txt); border:1px solid var(--line); font-weight:600}
+  button:disabled{opacity:.5; cursor:wait}
+  .slider-wrap{display:flex; align-items:center; gap:10px; flex:1; min-width:220px}
+  input[type=range]{accent-color:var(--accent); flex:1}
+  .progress{height:10px; background:#0c1a14; border:1px solid var(--line); border-radius:99px; overflow:hidden; margin-top:12px}
+  .progress > div{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2)); transition:width .1s}
+  .hidden{display:none}
+
+  /* recommendation card */
+  .reccard{border:1px solid var(--line); border-radius:12px; padding:14px; background:#0e1d16; margin-top:12px}
+  .reccard .vs{font-size:18px; font-weight:700; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .pill{display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:99px; font-size:12px; font-weight:700}
+  .pill.cheer{background:var(--chip); color:var(--accent); border:1px solid #2c5b43}
+  .pill.dim{background:#1a2620; color:var(--muted)}
+  .conf{display:inline-flex; align-items:center; gap:8px}
+  .confbar{width:120px; height:9px; background:#0c1a14; border-radius:99px; overflow:hidden; border:1px solid var(--line)}
+  .confbar > div{height:100%; border-radius:99px}
+  .favline{display:grid; grid-template-columns:130px 1fr auto; gap:10px; align-items:center; padding:7px 0; border-top:1px dashed var(--line)}
+  .favline:first-of-type{border-top:none}
+  .favname{font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  /* narrow spots (phone, or inside a group card): team + bar on one row, advice below, so nothing spills sideways */
+  .gmatches .favline{grid-template-columns:1fr auto}
+  .gmatches .favline .cheerfor{grid-column:1/-1; grid-row:2}
+  @media(max-width:560px){
+    .favline{grid-template-columns:1fr auto}
+    .favline .cheerfor{grid-column:1/-1; grid-row:2}
+  }
+  .cheerfor{font-size:13px}
+  .cheerfor b{color:var(--accent)}
+  .overall{background:linear-gradient(180deg,#13301f,#0e2417); border:1px solid #2c5b43; border-radius:12px; padding:12px 14px; margin-top:12px}
+
+  /* leaderboard */
+  table.lb{width:100%; border-collapse:collapse; font-size:14px}
+  table.lb th,table.lb td{padding:7px 8px; text-align:left; border-bottom:1px solid var(--line)}
+  table.lb th{color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.4px}
+  table.lb td.num{text-align:right; font-variant-numeric:tabular-nums}
+  .barcell{position:relative}
+  .barcell .b{position:absolute; left:0; top:0; bottom:0; background:rgba(25,195,125,.18); border-radius:4px}
+  .barcell span{position:relative}
+  tr.fav td{background:rgba(58,160,255,.08)}
+
+  /* group cards */
+  .groups{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+  @media(max-width:900px){.groups{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.groups{grid-template-columns:1fr}}
+  .gcard{border:1px solid var(--line); border-radius:12px; background:#0e1d16; overflow:hidden}
+  .gcard h3{font-size:14px; padding:9px 12px; margin:0; background:#13261c; border-bottom:1px solid var(--line)}
+  .gteam{display:grid; grid-template-columns:20px 1fr auto auto; gap:8px; align-items:center; padding:6px 12px; font-size:13px; border-bottom:1px solid #1a2c22}
+  .gteam:last-child{border-bottom:none}
+  .gteam .pos{color:var(--muted); font-variant-numeric:tabular-nums; width:20px}
+  .gteam .adv{font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .q1{box-shadow:inset 3px 0 0 var(--accent)}
+  .q2{box-shadow:inset 3px 0 0 var(--accent2)}
+  .q3{box-shadow:inset 3px 0 0 var(--warn)}
+  .gmatches{padding:8px 12px; border-top:1px dashed var(--line); display:none}
+  .gmatches.open{display:block}
+  .gm{display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:4px 0; cursor:pointer; border-radius:6px}
+  .gm:hover{background:#13261c}
+  .toggle{cursor:pointer; font-size:11px; color:var(--accent2); padding:6px 12px; user-select:none}
+
+  /* bracket */
+  .bracket-scroll{overflow-x:auto; padding-bottom:10px}
+  .bracket{display:flex; gap:18px; min-width:1100px}
+  .bround{display:flex; flex-direction:column; justify-content:space-around; gap:8px; min-width:150px}
+  .bround h4{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; text-align:center; margin:0 0 4px}
+  .bmatch{border:1px solid var(--line); border-radius:8px; background:#0e1d16; font-size:12px; overflow:hidden}
+  .bteam{padding:5px 8px; display:flex; gap:6px; align-items:center; white-space:nowrap; overflow:hidden}
+  .bteam:first-child{border-bottom:1px solid #1a2c22}
+  .bteam .p{margin-left:auto; color:var(--muted); font-size:10px; font-variant-numeric:tabular-nums}
+  .bteam.fav{background:rgba(58,160,255,.12)}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-top:8px}
+  .legend i{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:middle}
+  footer{color:var(--muted); font-size:12px; text-align:center; margin-top:30px}
+  .tag{font-size:11px; padding:2px 7px; border-radius:6px; background:#13261c; color:var(--muted); border:1px solid var(--line)}
+  details summary{cursor:pointer; color:var(--accent2); font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>⚽ Who Should I Cheer For?</h1>
+    <p>2026 World Cup · pick your favorite teams and find out which result in every match gives them the best shot at the trophy.</p>
+  </header>
+
+  <!-- SETUP -->
+  <section class="panel">
+    <h2>1 · Pick your favorite teams</h2>
+    <p class="muted small">Rank up to five. #1 is your true favorite and drives the “Overall” recommendation.</p>
+    <div class="fav-grid" id="favGrid"></div>
+    <div class="row" style="margin-top:16px">
+      <div class="slider-wrap">
+        <span class="small muted">Simulations</span>
+        <input type="range" id="simCount" min="2000" max="40000" step="1000" value="15000" />
+        <span class="small" id="simCountLbl" style="width:60px">15,000</span>
+      </div>
+      <button id="runBtn">Run simulation</button>
+      <span class="small muted" id="status"></span>
+    </div>
+    <div class="progress hidden" id="progWrap"><div id="progBar"></div></div>
+  </section>
+
+  <!-- RESULTS -->
+  <div id="results" class="hidden">
+
+    <!-- OVERALL / TITLE ODDS -->
+    <section class="panel">
+      <h2>2 · Your teams' trophy odds</h2>
+      <p class="muted small" id="oddsIntro"></p>
+      <div id="favOdds"></div>
+      <details style="margin-top:12px"><summary>Show full title-odds leaderboard (all 48 teams)</summary>
+        <div id="fullLb" style="margin-top:10px"></div>
+      </details>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="panel">
+      <h2>3 · Look up any match</h2>
+      <p class="muted small">Type a matchup like <span class="tag">Argentina vs Brazil</span> or <span class="tag">Spain vs Uruguay</span>. Works for group games and any possible knockout clash.</p>
+      <input type="text" id="search" placeholder="Team vs Team…" autocomplete="off" />
+      <div id="searchOut"></div>
+    </section>
+
+    <!-- GROUPS -->
+    <section class="panel">
+      <h2>4 · Group stage</h2>
+      <p class="muted small">Projected finish (advance % = chance of reaching the knockouts). Click a group to see each match and who you should cheer for. <span style="color:var(--accent)">▍</span>1st <span style="color:var(--accent2)">▍</span>2nd <span style="color:var(--warn)">▍</span>3rd.</p>
+      <div class="groups" id="groups"></div>
+    </section>
+
+    <!-- BRACKET -->
+    <section class="panel">
+      <h2>5 · Projected knockout bracket</h2>
+      <p class="muted small">Built from the most likely group winners &amp; runners-up. Real matchups depend on final standings — your highlighted teams' paths shown below.</p>
+      <div class="bracket-scroll"><div class="bracket" id="bracket"></div></div>
+      <div class="legend"><span><i style="background:rgba(58,160,255,.5)"></i>one of your favorites</span></div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>Model: World Football Elo ratings (June 2026) → per-match win/draw/loss probabilities → Monte-Carlo simulation of the full tournament. Hosts (🇺🇸🇨🇦🇲🇽) get a home-field bonus. Recommendations show the result that maximizes your favorite's title chance; confidence reflects how much the match swings those odds, discounted for simulation noise — so a match that barely changes your odds (or is too close to call) reads low even if one result is technically better. More simulations = steadier numbers.</p>
+    <p>Data: <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_draw" target="_blank">2026 draw</a> · <a href="https://en.wikipedia.org/wiki/2026_FIFA_World_Cup_knockout_stage" target="_blank">bracket structure</a> · <a href="https://www.eloratings.net/" target="_blank">Elo ratings</a>. An entertainment tool, not betting advice.</p>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   DATA — 2026 FIFA World Cup (real draw, Elo ratings June 2026)
+   ============================================================ */
+const HOSTS = new Set(["United States","Canada","Mexico"]);
+// [name, flag, elo]; grouped A..L in order
+const GROUPS_RAW = {
+  A:[["Mexico","🇲🇽",1701],["South Korea","🇰🇷",1592],["South Africa","🇿🇦",1420],["Czechia","🇨🇿",1506]],
+  B:[["Canada","🇨🇦",1559],["Switzerland","🇨🇭",1650],["Qatar","🇶🇦",1440],["Bosnia & Herz.","🇧🇦",1395]],
+  C:[["Brazil","🇧🇷",1766],["Morocco","🇲🇦",1755],["Haiti","🇭🇹",1295],["Scotland","🏴󠁧󠁢󠁳󠁣󠁴󠁿",1503]],
+  D:[["United States","🇺🇸",1671],["Paraguay","🇵🇾",1505],["Australia","🇦🇺",1579],["Türkiye","🇹🇷",1606]],
+  E:[["Germany","🇩🇪",1736],["Ivory Coast","🇨🇮",1541],["Ecuador","🇪🇨",1599],["Curaçao","🇨🇼",1300]],
+  F:[["Netherlands","🇳🇱",1754],["Sweden","🇸🇪",1510],["Tunisia","🇹🇳",1476],["Japan","🇯🇵",1662]],
+  G:[["Belgium","🇧🇪",1742],["Egypt","🇪🇬",1562],["Iran","🇮🇷",1620],["New Zealand","🇳🇿",1290]],
+  H:[["Spain","🇪🇸",1875],["Cape Verde","🇨🇻",1385],["Saudi Arabia","🇸🇦",1415],["Uruguay","🇺🇾",1673]],
+  I:[["France","🇫🇷",1871],["Senegal","🇸🇳",1684],["Iraq","🇮🇶",1438],["Norway","🇳🇴",1557]],
+  J:[["Argentina","🇦🇷",1877],["Algeria","🇩🇿",1571],["Austria","🇦🇹",1597],["Jordan","🇯🇴",1400]],
+  K:[["Portugal","🇵🇹",1768],["DR Congo","🇨🇩",1474],["Uzbekistan","🇺🇿",1459],["Colombia","🇨🇴",1698]],
+  L:[["England","🏴󠁧󠁢󠁥󠁮󠁧󠁿",1828],["Croatia","🇭🇷",1715],["Ghana","🇬🇭",1355],["Panama","🇵🇦",1539]],
+};
+const GLETTERS = Object.keys(GROUPS_RAW);
+
+// Build flat team list. id = index. teams[id]={id,name,flag,elo,group,gi(0..3),host}
+const TEAMS = [];
+const TEAM_BY_NAME = {};
+GLETTERS.forEach(g=>{
+  GROUPS_RAW[g].forEach((t,gi)=>{
+    const team={id:TEAMS.length,name:t[0],flag:t[1],elo:t[2],group:g,gi,host:HOSTS.has(t[0])};
+    TEAMS.push(team); TEAM_BY_NAME[t[0].toLowerCase()]=team;
+  });
+});
+const N_TEAMS = TEAMS.length;
+// group -> array of 4 team ids
+const GROUP_IDS = {};
+GLETTERS.forEach(g=>GROUP_IDS[g]=TEAMS.filter(t=>t.group===g).map(t=>t.id));
+// the 6 round-robin pairings (indices into the group's 4 teams)
+const RR = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]];
+
+/* Knockout structure (2026). Slot ref: {W:'A'} winner, {R:'A'} runner-up,
+   {T:[...]} best third from one of the listed groups. */
+const R32 = [
+  {id:73, a:{R:'A'}, b:{R:'B'}},
+  {id:74, a:{W:'E'}, b:{T:['A','B','C','D','F']}},
+  {id:75, a:{W:'F'}, b:{R:'C'}},
+  {id:76, a:{W:'C'}, b:{R:'F'}},
+  {id:77, a:{W:'I'}, b:{T:['C','D','F','G','H']}},
+  {id:78, a:{R:'E'}, b:{R:'I'}},
+  {id:79, a:{W:'A'}, b:{T:['C','E','F','H','I']}},
+  {id:80, a:{W:'L'}, b:{T:['E','H','I','J','K']}},
+  {id:81, a:{W:'D'}, b:{T:['B','E','F','I','J']}},
+  {id:82, a:{W:'G'}, b:{T:['A','E','H','I','J']}},
+  {id:83, a:{R:'K'}, b:{R:'L'}},
+  {id:84, a:{W:'H'}, b:{R:'J'}},
+  {id:85, a:{W:'B'}, b:{T:['E','F','G','I','J']}},
+  {id:86, a:{W:'J'}, b:{R:'H'}},
+  {id:87, a:{W:'K'}, b:{T:['D','E','I','J','L']}},
+  {id:88, a:{R:'D'}, b:{R:'G'}},
+];
+// later rounds: matchId -> [sourceMatchId, sourceMatchId]
+const LATER = [
+  {id:89, s:[74,77]},{id:90, s:[73,75]},{id:91, s:[76,78]},{id:92, s:[79,80]},
+  {id:93, s:[83,84]},{id:94, s:[81,82]},{id:95, s:[86,88]},{id:96, s:[85,87]},
+  {id:97, s:[89,90]},{id:98, s:[93,94]},{id:99, s:[91,92]},{id:100, s:[95,96]},
+  {id:101, s:[97,98]},{id:102, s:[99,100]},
+  {id:103, s:[101,102]}, // final
+];
+const ROUND_NAME = {32:"Round of 32",16:"Round of 16",8:"Quarter-finals",4:"Semi-finals",2:"Final"};
+// the 8 third-place slots and their eligible groups
+const THIRD_SLOTS = R32.filter(m=>m.b.T).map(m=>({id:m.id, elig:m.b.T}));
+
+/* ============================================================
+   ELO MATCH MODEL
+   ============================================================ */
+const HOME_BONUS = 75;
+function eff(team, oppHost){ // effective elo with host advantage
+  return team.elo + (team.host && !oppHost ? HOME_BONUS : 0);
+}
+function winExp(a,b){ // expected score for a vs b (0..1), host-adjusted
+  const ra = eff(a,b.host), rb = eff(b,a.host);
+  return 1/(1+Math.pow(10,(rb-ra)/400));
+}
+// Group match → {pa, pd, pb} (a win / draw / b win)
+function groupProbs(a,b){
+  const we = winExp(a,b);
+  // draw share: max ~30% when even, →0 as mismatch grows
+  const pd = 0.30*(1-Math.pow(2*we-1,2));
+  let pa = we - pd/2, pb = 1-we - pd/2;
+  if(pa<0){pb+=pa;pa=0;} if(pb<0){pa+=pb;pb=0;}
+  return {pa,pd,pb};
+}
+// Knockout → prob a wins (draws resolved by extra time/pens ≈ elo expectation)
+function koWinProb(a,b){ return winExp(a,b); }
+
+/* ============================================================
+   MONTE CARLO ENGINE
+   ============================================================ */
+// aggregates filled during run
+let AGG = null;
+
+function rnd(){ return Math.random(); }
+
+// Kuhn's algorithm: assign each third-slot a distinct qualifying group from its eligible set
+function assignThirds(qualGroups, slotElig){
+  // qualGroups: array of group letters that produced a qualifying 3rd (length 8)
+  // slotElig: array of {id, elig:[...]} length 8
+  const gIndex = {}; qualGroups.forEach((g,i)=>gIndex[g]=i);
+  const adj = slotElig.map(s=> s.elig.filter(g=>g in gIndex).map(g=>gIndex[g]));
+  const matchG = new Array(qualGroups.length).fill(-1); // group->slot
+  function tryK(s, seen){
+    for(const g of adj[s]){
+      if(seen[g]) continue; seen[g]=true;
+      if(matchG[g]===-1 || tryK(matchG[g], seen)){ matchG[g]=s; return true; }
+    }
+    return false;
+  }
+  for(let s=0;s<slotElig.length;s++) tryK(s, new Array(qualGroups.length).fill(false));
+  const slotToGroup = {};
+  qualGroups.forEach((g,gi)=>{ if(matchG[gi]!==-1) slotToGroup[slotElig[matchG[gi]].id]=g; });
+  // fallback for any unmatched slot (rare): grab any unused qual group
+  const used = new Set(Object.values(slotToGroup));
+  slotElig.forEach(s=>{ if(!(s.id in slotToGroup)){ const g=qualGroups.find(x=>!used.has(x)); slotToGroup[s.id]=g; used.add(g);} });
+  return slotToGroup; // slotId -> group letter
+}
+
+// One full tournament. Returns {champ, groupOutcomes:Int(72), koPairs:[[a,b,winner],...], standings}
+function simulateOnce(captureBracket){
+  // ---- group stage ----
+  const winner={}, runner={}, thirds=[]; // thirds: {g, id, key}
+  const groupOutcomes = []; // 72 entries, outcome 0/1/2 in group/RR order
+  const standOut = captureBracket? {} : null;
+  for(const g of GLETTERS){
+    const ids = GROUP_IDS[g];
+    const pts=[0,0,0,0];
+    for(let m=0;m<6;m++){
+      const i=RR[m][0], j=RR[m][1];
+      const pr=groupProbs(TEAMS[ids[i]],TEAMS[ids[j]]);
+      const r=rnd(); let o;
+      if(r<pr.pa){pts[i]+=3;o=0;}
+      else if(r<pr.pa+pr.pd){pts[i]+=1;pts[j]+=1;o=1;}
+      else {pts[j]+=3;o=2;}
+      groupOutcomes.push(o);
+    }
+    // rank: points, then elo, then small noise
+    const order=[0,1,2,3].map(k=>({k, pts:pts[k], key:pts[k]*1e6 + TEAMS[ids[k]].elo*100 + rnd()*60}))
+                          .sort((x,y)=>y.key-x.key);
+    winner[g]=ids[order[0].k]; runner[g]=ids[order[1].k];
+    thirds.push({g, id:ids[order[2].k], key:order[2].pts*1e6 + TEAMS[ids[order[2].k]].elo*100 + rnd()*60});
+    if(captureBracket) standOut[g]=order.map(o=>ids[o.k]);
+  }
+  // ---- best 8 thirds ----
+  thirds.sort((a,b)=>b.key-a.key);
+  const qual = thirds.slice(0,8);
+  const qualGroups = qual.map(t=>t.g);
+  const thirdById = {}; qual.forEach(t=>thirdById[t.g]=t.id);
+  const slotToGroup = assignThirds(qualGroups, THIRD_SLOTS);
+  // ---- resolve a slot ref to a team id ----
+  function resolve(ref){
+    if(ref.W) return winner[ref.W];
+    if(ref.R) return runner[ref.R];
+    return thirdById[slotToGroup[ref.id]]; // T
+  }
+  // ---- knockout ----
+  const wmap={}; // matchId -> winner team id
+  const koPairs = captureBracket? null : [];
+  const bracketFill = captureBracket? {} : null;
+  function play(aId,bId){
+    const w = rnd()<koWinProb(TEAMS[aId],TEAMS[bId]) ? aId : bId;
+    return w;
+  }
+  for(const m of R32){
+    const aId=resolve(m.a), bId=resolve(Object.assign({id:m.id},m.b));
+    const w=play(aId,bId); wmap[m.id]=w;
+    if(koPairs) koPairs.push([aId,bId,w]);
+  }
+  for(const m of LATER){
+    const aId=wmap[m.s[0]], bId=wmap[m.s[1]];
+    const w=play(aId,bId); wmap[m.id]=w;
+    if(koPairs) koPairs.push([aId,bId,w]);
+  }
+  const champ=wmap[103];
+  return {champ, groupOutcomes, koPairs, standOut};
+}
+
+/* Aggregation structures:
+   champCount[id]                          -> times team won title
+   reachedKO[id]                           -> times team reached R32
+   finish[g][pos][teamId]                  -> count team finished pos(0/1/2) in group (for bracket)
+   gm[g*6+m][outcome] = {n, champ:{id:count}}-> conditional title dist per group-match outcome
+   pairIdx["i-j"] = {a,b, na, nb, ca:{}, cb:{}} -> knockout pair conditional title dist
+*/
+function newAgg(){
+  const champCount=new Float64Array(N_TEAMS);
+  const reachedKO=new Float64Array(N_TEAMS);
+  const finish={}; GLETTERS.forEach(g=>finish[g]=[{},{},{}]);
+  const gm=[]; for(let i=0;i<72;i++){ gm.push([{n:0,c:{}},{n:0,c:{}},{n:0,c:{}}]); }
+  return {champCount,reachedKO,finish,gm,pairIdx:{},nSims:0};
+}
+function bump(obj,key){ obj[key]=(obj[key]||0)+1; }
+
+function accumulate(agg, sim){
+  agg.champCount[sim.champ]++;
+  // group-match conditional
+  for(let i=0;i<72;i++){
+    const cell=agg.gm[i][sim.groupOutcomes[i]];
+    cell.n++; bump(cell.c, sim.champ);
+  }
+  // knockout pairs + reachedKO (teams appearing in R32 = first 16 koPairs)
+  const seen=new Set();
+  for(let k=0;k<sim.koPairs.length;k++){
+    const [a,b,w]=sim.koPairs[k];
+    if(k<16){ if(!seen.has(a)){seen.add(a);agg.reachedKO[a]++;} if(!seen.has(b)){seen.add(b);agg.reachedKO[b]++;} }
+    const key = a<b? a+"-"+b : b+"-"+a;
+    let p=agg.pairIdx[key];
+    if(!p){ p={a:Math.min(a,b),b:Math.max(a,b),na:0,nb:0,ca:{},cb:{}}; agg.pairIdx[key]=p; }
+    if(w===p.a){ p.na++; bump(p.ca,sim.champ);} else { p.nb++; bump(p.cb,sim.champ);}
+  }
+  agg.nSims++;
+}
+
+// run N sims, chunked, with progress
+function runMonteCarlo(N, onProgress){
+  return new Promise(resolve=>{
+    const agg=newAgg();
+    // collect group-finish stats from a subset for bracket projection (every sim, cheap)
+    let done=0; const CHUNK=400;
+    function step(){
+      const end=Math.min(done+CHUNK,N);
+      for(;done<end;done++){
+        const sim=simulateOnce(false);
+        accumulate(agg,sim);
+        // finish stats: recompute from standings is costly; approximate from this sim's KO not available.
+      }
+      // separately gather finish projection less often handled below
+      onProgress(done/N);
+      if(done<N) setTimeout(step,0); else {
+        // second tiny pass to get group-finish modal teams for bracket (1500 sims)
+        gatherFinish(agg, Math.min(1500,N));
+        resolve(agg);
+      }
+    }
+    step();
+  });
+}
+function gatherFinish(agg, n){
+  for(let s=0;s<n;s++){
+    const sim=simulateOnce(true);
+    for(const g of GLETTERS){
+      const st=sim.standOut[g];
+      bump(agg.finish[g][0],st[0]); bump(agg.finish[g][1],st[1]); bump(agg.finish[g][2],st[2]);
+    }
+  }
+  agg.finishN=n;
+}
+
+/* ============================================================
+   RECOMMENDATION LOGIC
+   ============================================================ */
+function pct(x){ return x*100; }
+// standard error of a proportion p estimated from n samples
+function seOf(p,n){ return n>0 ? Math.sqrt(Math.max(p*(1-p),1e-7)/n) : 1; }
+// confidence 1..100 from an effective (noise-stripped) swing, calibrated to favorite's baseline
+function confidence(effSwing, baseline){
+  const scale = Math.max(0.02, 0.5*baseline); // swing == baseline → ~96
+  return Math.round(100*Math.tanh(Math.max(0,effSwing)/scale));
+}
+// word the recommendation strength so a tiny/uncertain swing doesn't read as a command
+function verb(conf){
+  if(conf>=50) return "Cheer hard for";
+  if(conf>=25) return "Cheer for";
+  if(conf>=8)  return "Slight lean:";
+  return "Toss-up — barely matters; if anything";
+}
+function titleProbFromDist(distObj, n, favId){ return n>0 ? (distObj[favId]||0)/n : null; }
+
+// recommendation for a group match (group letter g, match index m 0..5) for a single favorite
+function recGroupMatch(agg, g, m, favId){
+  const cell=agg.gm[GLETTERS.indexOf(g)*6+m];
+  const base=agg.champCount[favId]/agg.nSims;
+  const ids=GROUP_IDS[g]; const i=RR[m][0], j=RR[m][1];
+  const out=[ // 0:a win, 1:draw, 2:b win
+    {label:TEAMS[ids[i]].name, kind:'a', p:titleProbFromDist(cell[0].c,cell[0].n,favId), n:cell[0].n},
+    {label:"Draw", kind:'d', p:titleProbFromDist(cell[1].c,cell[1].n,favId), n:cell[1].n},
+    {label:TEAMS[ids[j]].name, kind:'b', p:titleProbFromDist(cell[2].c,cell[2].n,favId), n:cell[2].n},
+  ];
+  return buildRec(out, base, favId, ids[i], ids[j]);
+}
+// recommendation for a knockout/any pair (team ids ta, tb) for a favorite
+function recPair(agg, ta, tb, favId){
+  const key= ta<tb? ta+"-"+tb : tb+"-"+ta;
+  const p=agg.pairIdx[key];
+  const base=agg.champCount[favId]/agg.nSims;
+  if(!p || (p.na+p.nb)<8) return {none:true, base};
+  const out=[
+    {label:TEAMS[p.a].name, kind:'a', p:titleProbFromDist(p.ca,p.na,favId), n:p.na, id:p.a},
+    {label:TEAMS[p.b].name, kind:'b', p:titleProbFromDist(p.cb,p.nb,favId), n:p.nb, id:p.b},
+  ];
+  return buildRec(out, base, favId, p.a, p.b);
+}
+function buildRec(out, base, favId, aId, bId){
+  const valid=out.filter(o=>o.p!==null);
+  if(!valid.length) return {none:true, base};
+  let best=valid[0], worst=valid[0];
+  valid.forEach(o=>{ if(o.p>best.p)best=o; if(o.p<worst.p)worst=o; });
+  const swing=best.p-worst.p;
+  // strip the sampling-noise band: only the part of the swing we can statistically
+  // distinguish from zero counts toward confidence (≈1.5σ threshold).
+  const seSwing=Math.sqrt(Math.pow(seOf(best.p,best.n),2)+Math.pow(seOf(worst.p,worst.n),2));
+  const effSwing=Math.max(0, swing - 1.5*seSwing);
+  return {
+    base, out, best, worst, swing, seSwing, effSwing,
+    conf:confidence(effSwing, Math.max(base,0.01)),
+    favId, aId, bId
+  };
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const favSelects=[];
+function buildFavPicker(){
+  const grid=$("#favGrid");
+  const sortedByElo=[...TEAMS].sort((a,b)=>b.elo-a.elo);
+  for(let i=0;i<5;i++){
+    const wrap=document.createElement("div");
+    const lab=document.createElement("label"); lab.className="fld";
+    lab.textContent = i===0? "★ #1 Favorite" : "#"+(i+1)+" (optional)";
+    const sel=document.createElement("select");
+    sel.innerHTML='<option value="">—</option>'+sortedByElo.map(t=>`<option value="${t.id}">${t.flag} ${t.name}</option>`).join("");
+    if(i===0) sel.value = TEAM_BY_NAME["argentina"].id; // sensible default
+    wrap.appendChild(lab); wrap.appendChild(sel); grid.appendChild(wrap);
+    favSelects.push(sel);
+  }
+}
+function getFavorites(){
+  const seen=new Set(), favs=[];
+  favSelects.forEach(s=>{ if(s.value!==""){ const id=+s.value; if(!seen.has(id)){seen.add(id);favs.push(id);} }});
+  return favs;
+}
+
+let RESULT=null, FAVS=[];
+
+async function run(){
+  const favs=getFavorites();
+  if(!favs.length){ $("#status").textContent="Pick at least your #1 favorite first."; return; }
+  FAVS=favs;
+  const N=+$("#simCount").value;
+  const btn=$("#runBtn"); btn.disabled=true; btn.textContent="Simulating…";
+  $("#status").textContent="";
+  $("#progWrap").classList.remove("hidden");
+  const agg=await runMonteCarlo(N, f=>{ $("#progBar").style.width=(f*100).toFixed(0)+"%"; });
+  RESULT=agg;
+  $("#progWrap").classList.add("hidden"); $("#progBar").style.width="0%";
+  btn.disabled=false; btn.textContent="Re-run simulation";
+  $("#status").textContent=`Done · ${N.toLocaleString()} tournaments simulated.`;
+  $("#results").classList.remove("hidden");
+  renderAll();
+  $("#results").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function renderAll(){
+  renderFavOdds();
+  renderLeaderboard();
+  renderGroups();
+  renderBracket();
+  renderSearch();
+}
+
+function favName(id){ return TEAMS[id].flag+" "+TEAMS[id].name; }
+function confColor(c){ return c>=66?"var(--accent)":c>=33?"var(--warn)":"var(--muted)"; }
+
+function renderFavOdds(){
+  const agg=RESULT;
+  const top=FAVS.map(id=>({id,p:agg.champCount[id]/agg.nSims, ko:agg.reachedKO[id]/agg.nSims}))
+  $("#oddsIntro").textContent=`From ${agg.nSims.toLocaleString()} simulated tournaments. “Advance” = reach the Round of 32.`;
+  let h='<table class="lb"><tr><th>Your rank</th><th>Team</th><th class="num">Advance</th><th class="num">Win title</th></tr>';
+  top.forEach((t,i)=>{
+    h+=`<tr class="fav"><td>#${i+1}</td><td>${favName(t.id)}</td>
+        <td class="num">${pct(t.ko).toFixed(0)}%</td>
+        <td class="num"><b>${pct(t.p).toFixed(1)}%</b></td></tr>`;
+  });
+  h+='</table>';
+  $("#favOdds").innerHTML=h;
+}
+
+function renderLeaderboard(){
+  const agg=RESULT;
+  const arr=TEAMS.map(t=>({id:t.id,p:agg.champCount[t.id]/agg.nSims})).sort((a,b)=>b.p-a.p);
+  const max=arr[0].p||1;
+  let h='<table class="lb"><tr><th>#</th><th>Team</th><th class="num">Title odds</th></tr>';
+  arr.forEach((t,i)=>{
+    const isFav=FAVS.includes(t.id);
+    h+=`<tr class="${isFav?'fav':''}"><td>${i+1}</td><td>${favName(t.id)}</td>
+        <td class="num barcell"><span class="b" style="width:${(t.p/max*100).toFixed(0)}%"></span><span>${pct(t.p).toFixed(2)}%</span></td></tr>`;
+  });
+  h+='</table>';
+  $("#fullLb").innerHTML=h;
+}
+
+// Combined "overall" recommendation across favorites (driven by #1, weighted blend shown)
+function overallSide(recsByFav){
+  // recsByFav: array aligned to FAVS of rec objects (may have .none)
+  // weight by favorite priority (5,4,3,2,1) * that favorite's own confidence direction
+  const sideScore={}; // key kind/id -> weighted score
+  const W=[5,4,3,2,1];
+  recsByFav.forEach((r,i)=>{
+    if(!r||r.none||!r.best) return;
+    const k = r.best.id!==undefined? 'id'+r.best.id : r.best.kind;
+    sideScore[k]=(sideScore[k]||0)+W[i]*(r.conf/100+0.01);
+  });
+  let bestK=null,bestV=-1;
+  for(const k in sideScore){ if(sideScore[k]>bestV){bestV=sideScore[k];bestK=k;} }
+  return bestK;
+}
+
+function recCardHTML(title, recs, aId, bId, isGroup){
+  // recs: array aligned to FAVS
+  const primary=recs[0];
+  let h=`<div class="reccard">`;
+  h+=`<div class="vs">${title}</div>`;
+  if(primary && primary.none){
+    h+=`<p class="small muted" style="margin:8px 0 0">These teams didn't meet often enough in simulations to judge${isGroup?"":" — they'd need to reach the same knockout slot"}. Try another matchup.</p></div>`;
+    return h;
+  }
+  // overall pick (driven by #1 fav, blended)
+  const ov=overallSide(recs);
+  const ovLabel=sideLabel(ov, primary);
+  // overall confidence = #1 favorite's confidence
+  const ovConf=primary.conf;
+  h+=`<div class="overall"><b>Overall:</b> ${verb(ovConf)} <b style="color:var(--accent)">${ovLabel}</b>
+       <span class="conf" style="margin-left:8px">${confBar(ovConf)}</span>
+       <div class="small muted" style="margin-top:3px">Driven by your #1 (${TEAMS[FAVS[0]].name}); confidence = how much this game actually swings their trophy odds (low = barely matters, even if one result is technically better).</div></div>`;
+  // per-favorite lines
+  recs.forEach((r,i)=>{
+    if(!r||r.none){ h+=`<div class="favline"><span class="favname">${favName(FAVS[i])}</span><span class="cheerfor muted small">no clear effect / rarely meet</span><span></span></div>`; return; }
+    const cheer = r.best.kind==='d' ? "a Draw" : `<b>${TEAMS[r.best.id!==undefined?r.best.id:(r.best.kind==='a'?aId:bId)].name}</b>`;
+    const detail = outcomeDetail(r);
+    h+=`<div class="favline">
+          <span class="favname">${favName(FAVS[i])}</span>
+          <span class="cheerfor">${verb(r.conf)} ${cheer} <span class="muted small">(${detail})</span></span>
+          <span>${confBar(r.conf)}</span>
+        </div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+function sideLabel(k, rec){
+  if(!k) return "either result";
+  if(k==='d') return "a Draw";
+  if(k.startsWith('id')) return TEAMS[+k.slice(2)].name;
+  // kind a/b → map via rec
+  return k==='a'? (rec.aId!==undefined?TEAMS[rec.aId].name:"the first team") : (rec.bId!==undefined?TEAMS[rec.bId].name:"the second team");
+}
+function outcomeDetail(r){
+  const parts=r.out.filter(o=>o.p!==null).map(o=>`${o.label==="Draw"?"Draw":o.label}: ${pct(o.p).toFixed(1)}%`);
+  return parts.join(" · ");
+}
+function confBar(c){
+  return `<span class="conf"><span class="confbar"><div style="width:${c}%;background:${confColor(c)}"></div></span><b style="color:${confColor(c)}">${c}</b></span>`;
+}
+
+function recsForGroupMatch(g,m){ return FAVS.map(f=>recGroupMatch(RESULT,g,m,f)); }
+function recsForPair(a,b){ return FAVS.map(f=>recPair(RESULT,a,b,f)); }
+
+/* ---- Groups UI ---- */
+function renderGroups(){
+  const agg=RESULT; const wrap=$("#groups"); wrap.innerHTML="";
+  GLETTERS.forEach(g=>{
+    const ids=GROUP_IDS[g];
+    // projected order by P(1st)+... use finish counts; rank by expected finish score
+    const fin=agg.finish[g], fn=agg.finishN||1;
+    const ranked=ids.map(id=>{
+      const p1=(fin[0][id]||0)/fn, p2=(fin[1][id]||0)/fn, p3=(fin[2][id]||0)/fn;
+      return {id, p1,p2,p3, adv:p1+p2, score:p1*3+p2*2+p3};
+    }).sort((a,b)=>b.score-a.score);
+    const card=document.createElement("div"); card.className="gcard";
+    let h=`<h3>Group ${g}</h3>`;
+    ranked.forEach((r,i)=>{
+      const cls=i===0?"q1":i===1?"q2":i===2?"q3":"";
+      const fav=FAVS.includes(r.id);
+      h+=`<div class="gteam ${cls}">
+            <span class="pos">${i+1}</span>
+            <span>${favName(r.id)} ${fav?'<span class="tag" style="color:var(--accent2)">yours</span>':''}</span>
+            <span class="adv">${(r.adv*100).toFixed(0)}%</span>
+            <span class="adv">${TEAMS[r.id].elo}</span>
+          </div>`;
+    });
+    h+=`<div class="toggle" data-g="${g}">▸ show 6 matches &amp; who to cheer for</div>`;
+    h+=`<div class="gmatches" id="gm-${g}"></div>`;
+    card.innerHTML=h; wrap.appendChild(card);
+  });
+  wrap.querySelectorAll(".toggle").forEach(t=>{
+    t.onclick=()=>{
+      const g=t.dataset.g, box=$("#gm-"+g);
+      if(box.classList.contains("open")){box.classList.remove("open");t.innerHTML="▸ show 6 matches &amp; who to cheer for";return;}
+      box.innerHTML=renderGroupMatches(g); box.classList.add("open");
+      t.innerHTML="▾ hide matches";
+    };
+  });
+}
+function renderGroupMatches(g){
+  const ids=GROUP_IDS[g];
+  let h="";
+  for(let m=0;m<6;m++){
+    const i=RR[m][0], j=RR[m][1];
+    const recs=recsForGroupMatch(g,m);
+    const ov=overallSide(recs); const primary=recs[0];
+    const conf = primary.none?0:primary.conf;
+    const lbl = primary.none? "—" : (conf<8? "toss-up" : sideLabel(ov,primary));
+    h+=`<div class="gm" data-g="${g}" data-m="${m}">
+          <span>${TEAMS[ids[i]].flag} ${TEAMS[ids[i]].name} <span class="muted">v</span> ${TEAMS[ids[j]].name} ${TEAMS[ids[j]].flag}</span>
+          <span class="muted">cheer: <b style="color:${conf<8?'var(--muted)':'var(--accent)'}">${lbl}</b> ${conf?`<b style="color:${confColor(conf)}">${conf}</b>`:""}</span>
+        </div>`;
+  }
+  // delegate click to expand into a full reccard
+  setTimeout(()=>{
+    $("#gm-"+g).querySelectorAll(".gm").forEach(el=>{
+      el.onclick=()=>{
+        const mm=+el.dataset.m, i=RR[mm][0], j=RR[mm][1];
+        const title=`${favName(ids[i])} <span class="muted">vs</span> ${favName(ids[j])}`;
+        const card=recCardHTML(title, recsForGroupMatch(g,mm), ids[i], ids[j], true);
+        // toggle a detail under this row
+        let nx=el.nextElementSibling;
+        if(nx && nx.classList.contains("rcwrap")){ nx.remove(); return; }
+        const d=document.createElement("div"); d.className="rcwrap"; d.innerHTML=card;
+        el.after(d);
+      };
+    });
+  },0);
+  return h;
+}
+
+/* ---- Bracket UI ---- */
+function modalTeam(distObj){
+  let best=-1,bv=-1; for(const k in distObj){ if(distObj[k]>bv){bv=distObj[k];best=+k;} } return best;
+}
+function renderBracket(){
+  const agg=RESULT;
+  // projected winner/runner per group
+  const W={},R={};
+  GLETTERS.forEach(g=>{ W[g]=modalTeam(agg.finish[g][0]); R[g]=modalTeam(agg.finish[g][1]); });
+  // projected best thirds: take groups by P(this group's 3rd qualifies)? approximate: pick 8 strongest modal thirds by elo
+  const thirdsProj={}; GLETTERS.forEach(g=>thirdsProj[g]=modalTeam(agg.finish[g][2]));
+  const thirdElig=GLETTERS.map(g=>({g, elo:TEAMS[thirdsProj[g]].elo})).sort((a,b)=>b.elo-a.elo).slice(0,8).map(x=>x.g);
+  const slotToGroup=assignThirds(thirdElig, THIRD_SLOTS);
+  function slotTeam(ref){
+    if(ref.W) return W[ref.W];
+    if(ref.R) return R[ref.R];
+    return thirdsProj[slotToGroup[ref.id]];
+  }
+  // simulate the projected bracket deterministically by higher win prob
+  const wmap={};
+  function det(a,b){ return koWinProb(TEAMS[a],TEAMS[b])>=0.5? a:b; }
+  const fillR32=[];
+  R32.forEach(m=>{ const a=slotTeam(m.a), b=slotTeam(Object.assign({id:m.id},m.b)); wmap[m.id]=det(a,b); fillR32.push({id:m.id,a,b,w:wmap[m.id]}); });
+  const fillLater={};
+  LATER.forEach(m=>{ const a=wmap[m.s[0]], b=wmap[m.s[1]]; wmap[m.id]=det(a,b); fillLater[m.id]={a,b,w:wmap[m.id]}; });
+
+  // build columns: R32(16) R16(8) QF(4) SF(2) Final(1)
+  const cols=[
+    {name:"Round of 32", matches:fillR32.map(x=>[x.a,x.b])},
+    {name:"Round of 16", matches:[89,90,91,92,93,94,95,96].map(id=>[fillLater[id].a,fillLater[id].b])},
+    {name:"Quarter-finals", matches:[97,98,99,100].map(id=>[fillLater[id].a,fillLater[id].b])},
+    {name:"Semi-finals", matches:[101,102].map(id=>[fillLater[id].a,fillLater[id].b])},
+    {name:"Final", matches:[[fillLater[103].a,fillLater[103].b]]},
+  ];
+  const champ=fillLater[103].w;
+  const wrap=$("#bracket"); wrap.innerHTML="";
+  cols.forEach((col,ci)=>{
+    const c=document.createElement("div"); c.className="bround";
+    let h=`<h4>${col.name}</h4>`;
+    col.matches.forEach(([a,b])=>{
+      h+=`<div class="bmatch">${bteam(a)}${bteam(b)}</div>`;
+    });
+    c.innerHTML=h; wrap.appendChild(c);
+  });
+  // champion column
+  const cc=document.createElement("div"); cc.className="bround";
+  cc.innerHTML=`<h4>🏆 Champion</h4><div class="bmatch" style="border-color:var(--gold)"><div class="bteam ${FAVS.includes(champ)?'fav':''}" style="font-weight:700">${TEAMS[champ].flag} ${TEAMS[champ].name}</div></div>`;
+  wrap.appendChild(cc);
+
+  function bteam(id){
+    const fav=FAVS.includes(id);
+    const p=(agg.champCount[id]/agg.nSims*100);
+    return `<div class="bteam ${fav?'fav':''}">${TEAMS[id].flag} <span style="overflow:hidden;text-overflow:ellipsis">${TEAMS[id].name}</span><span class="p">${p>=0.1?p.toFixed(0)+'%':''}</span></div>`;
+  }
+}
+
+/* ---- Search ---- */
+function findTeam(str){
+  str=str.trim().toLowerCase();
+  if(!str) return null;
+  if(TEAM_BY_NAME[str]) return TEAM_BY_NAME[str];
+  let hit=TEAMS.find(t=>t.name.toLowerCase().startsWith(str));
+  if(hit) return hit;
+  hit=TEAMS.find(t=>t.name.toLowerCase().includes(str));
+  return hit||null;
+}
+function renderSearch(){
+  const inp=$("#search"); const out=$("#searchOut");
+  function go(){
+    const v=inp.value;
+    const parts=v.split(/\s+vs?\.?\s+|\s+v\s+/i);
+    if(parts.length<2 || !parts[0].trim() || !parts[1].trim()){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Type two teams separated by “vs”.</p>`; return; }
+    const A=findTeam(parts[0]), B=findTeam(parts[1]);
+    if(!A||!B){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Couldn't find ${!A?'“'+parts[0].trim()+'”':''} ${!A&&!B?'and':''} ${!B?'“'+parts[1].trim()+'”':''}. Check spelling.</p>`; return; }
+    if(A.id===B.id){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Pick two different teams.</p>`; return; }
+    let card;
+    const title=`${A.flag} ${A.name} <span class="muted">vs</span> ${B.flag} ${B.name}`;
+    if(A.group===B.group){
+      // it's their group match: find which RR index
+      const ids=GROUP_IDS[A.group]; const ai=ids.indexOf(A.id), bi=ids.indexOf(B.id);
+      let m=RR.findIndex(p=>(ids[p[0]]===A.id&&ids[p[1]]===B.id)||(ids[p[0]]===B.id&&ids[p[1]]===A.id));
+      const i=RR[m][0], j=RR[m][1];
+      card=recCardHTML(title+` <span class="tag">Group ${A.group} match</span>`, recsForGroupMatch(A.group,m), ids[i], ids[j], true);
+    } else {
+      card=recCardHTML(title+` <span class="tag">possible knockout clash</span>`, recsForPair(A.id,B.id), A.id, B.id, false);
+    }
+    out.innerHTML=card;
+  }
+  inp.oninput=go;
+  if(inp.value) go();
+}
+
+/* ---- boot ---- */
+buildFavPicker();
+$("#simCount").oninput=e=>{ $("#simCountLbl").textContent=(+e.target.value).toLocaleString(); };
+$("#runBtn").onclick=run;
+$("#search")&&($("#search").value="");
+</script>
+</body>
+</html>
