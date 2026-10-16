@@ -4,7 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Who Should I Cheer For? — 2026 World Cup</title>
-<style>
+<meta name="description" content="Pick your favorite teams for the 2026 World Cup and see which result in every match gives them the best shot at the trophy." />
+<link rel="icon" href="data:," /><!-- no favicon file: stops the 404 request --><style>
   :root{
     --bg:#0a1410; --panel:#11201a; --panel2:#16291f; --line:#234234;
     --txt:#e8f5ee; --muted:#8fb3a1; --accent:#19c37d; --accent2:#3aa0ff;
@@ -137,7 +138,7 @@
     <div class="row" style="margin-top:16px">
       <div class="slider-wrap">
         <span class="small muted">Simulations</span>
-        <input type="range" id="simCount" min="2000" max="40000" step="1000" value="15000" />
+        <input type="range" id="simCount" aria-label="Number of simulations" min="2000" max="40000" step="1000" value="15000" />
         <span class="small" id="simCountLbl" style="width:60px">15,000</span>
       </div>
       <button id="runBtn">Run simulation</button>
@@ -163,7 +164,7 @@
     <section class="panel">
       <h2>3 · Look up any match</h2>
       <p class="muted small">Type a matchup like <span class="tag">Argentina vs Brazil</span> or <span class="tag">Spain vs Uruguay</span>. Works for group games and any possible knockout clash.</p>
-      <input type="text" id="search" placeholder="Team vs Team…" autocomplete="off" />
+      <input type="text" id="search" aria-label="Look up a match" placeholder="Team vs Team…" autocomplete="off" />
       <div id="searchOut"></div>
     </section>
 
@@ -520,6 +521,7 @@ function buildFavPicker(){
     const lab=document.createElement("label"); lab.className="fld";
     lab.textContent = i===0? "★ #1 Favorite" : "#"+(i+1)+" (optional)";
     const sel=document.createElement("select");
+    sel.id="fav"+i; lab.htmlFor=sel.id; // tie the visible label to its dropdown (screen readers)
     sel.innerHTML='<option value="">—</option>'+sortedByElo.map(t=>`<option value="${t.id}">${t.flag} ${t.name}</option>`).join("");
     if(i===0) sel.value = TEAM_BY_NAME["argentina"].id; // sensible default
     wrap.appendChild(lab); wrap.appendChild(sel); grid.appendChild(wrap);
@@ -665,7 +667,8 @@ function renderGroups(){
     const fin=agg.finish[g], fn=agg.finishN||1;
     const ranked=ids.map(id=>{
       const p1=(fin[0][id]||0)/fn, p2=(fin[1][id]||0)/fn, p3=(fin[2][id]||0)/fn;
-      return {id, p1,p2,p3, adv:p1+p2, score:p1*3+p2*2+p3};
+      // advance = reached the Round of 32 in the full run (includes best third-place finishers)
+      return {id, p1,p2,p3, adv:agg.reachedKO[id]/agg.nSims, score:p1*3+p2*2+p3};
     }).sort((a,b)=>b.score-a.score);
     const card=document.createElement("div"); card.className="gcard";
     let h=`<h3>Group ${g}</h3>`;
@@ -790,6 +793,8 @@ function findTeam(str){
   hit=TEAMS.find(t=>t.name.toLowerCase().includes(str));
   return hit||null;
 }
+// typed text is shown back to the user: escape it so it can't inject HTML
+function esc(s){ return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function renderSearch(){
   const inp=$("#search"); const out=$("#searchOut");
   function go(){
@@ -797,7 +802,7 @@ function renderSearch(){
     const parts=v.split(/\s+vs?\.?\s+|\s+v\s+/i);
     if(parts.length<2 || !parts[0].trim() || !parts[1].trim()){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Type two teams separated by “vs”.</p>`; return; }
     const A=findTeam(parts[0]), B=findTeam(parts[1]);
-    if(!A||!B){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Couldn't find ${!A?'“'+parts[0].trim()+'”':''} ${!A&&!B?'and':''} ${!B?'“'+parts[1].trim()+'”':''}. Check spelling.</p>`; return; }
+    if(!A||!B){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Couldn't find ${!A?'“'+esc(parts[0].trim())+'”':''} ${!A&&!B?'and':''} ${!B?'“'+esc(parts[1].trim())+'”':''}. Check spelling.</p>`; return; }
     if(A.id===B.id){ out.innerHTML=`<p class="small muted" style="margin-top:10px">Pick two different teams.</p>`; return; }
     let card;
     const title=`${A.flag} ${A.name} <span class="muted">vs</span> ${B.flag} ${B.name}`;
