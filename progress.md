@@ -9,6 +9,7 @@ Finished and live; maintenance only. Tim has asked for nothing new since publish
 ## Status
 | Area | State |
 |---|---|
+| Site icon | Added 2026-10-17: `icon.svg` (white soccer ball, green rim, on #0a1410) as tab favicon + `apple-touch-icon.png` 180px for iPhone home screen |
 | App (`index.html`) | Live at https://timothyhadfield.github.io/world-cup-preference/ |
 | Tests | None (single HTML file); verified with phone-view |
 | 2026-10-16 sweep | Fixed group-card advance % (now includes third-place qualifiers), escaped typed text in match lookup, added labels for screen readers, meta description, no favicon 404 |
